@@ -1,21 +1,55 @@
-import React from "react";
-import {View, StyleSheet} from "react-native";
+import * as Location from "expo-location";
+import React, {useEffect, useState} from "react";
+import {View, StyleSheet, Dimensions} from "react-native";
 import {Text} from "react-native";
 import {ScrollView} from "react-native";
-// import * as expoLocation from "expo-location/src/ExpoLocation";
 
-export default function App(){
-    return(
-        <View style = {styles.container}>
+const {width:SCREEN_WIDTH} = Dimensions.get("window");
+const API_KEY = "358b41330582446b0266246023c6eacb";
+
+export default function App() {
+    const [city,setCity] = useState("loading..");
+    const [ok, setOk] = useState(true);
+    // 권한요청 (앱 사용중에만 위치를 요청)
+    const getWeather = async () => {
+        const {granted} = await Location.requestForegroundPermissionsAsync();
+        // 만약 허가를 받지 않았다면 setOk를 false 해줌
+        const {
+            coords: {latitude, longitude},
+        } = await Location.getCurrentPositionAsync({accuracy:5});
+
+       /* const {
+            latitude, longitude
+        } = await (await Location.getCurrentPositionAsync({accuracy: 5})).coords;*/
+
+        if(!granted){
+            setOk(false);
+        };
+        console.log(latitude, longitude)
+        const location = await Location.reverseGeocodeAsync(
+            {latitude, longitude},
+            {useGoogleMaps:false}
+        );
+        console.log(location[0].region);
+        setCity(location[0].region);
+    };
+
+    // 컴포넌트가 마운트 되면 useEffect 를 사용해서 getPermission 함수를 호출
+    useEffect(()=>{
+        getWeather();
+    },[]);
+    return (
+        <View style={styles.container}>
             <View style={styles.city}>
-                <Text style={styles.cityName}>Seoul</Text>
+                <Text style={styles.cityName}>{city}</Text>
             </View>
 
             <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contenContainerStyle={styles.weather}
-            pagingEnabled
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.weather}
+                style={{backgroundColor: 'white'}}
             >
 
                 <View style={styles.day}>
@@ -63,6 +97,7 @@ const styles = StyleSheet.create({
     },
     day:{
         flex:1,
+        width:SCREEN_WIDTH,
         justifyContent:"center",
         alignItems:"center",
     },
